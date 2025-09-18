@@ -67,7 +67,7 @@ model Session {
 
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  
   @@index([expiresAt])
 }
 
@@ -83,16 +83,7 @@ model PointTransaction {
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   order     Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
-  @@index([userId])
   @@index([orderId])
-}
-
-/// 등급 규칙
-model GradeRule {
-  id        Int     @id @default(autoincrement())
-  name      String // (예: "green")
-  rate      Int // 포인트 적립률 (%) 정수 — 5 = 5%
-  minAmount Int
 }
 
 model Store {
