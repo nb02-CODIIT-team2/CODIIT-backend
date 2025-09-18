@@ -1,78 +1,98 @@
 name: Notify Reviewers on PR
 
 on:
-  workflow_dispatch:
-  pull_request:
-    types: [opened, reopened, ready_for_review]
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - review_requested
+      - review_request_removed
+
+permissions:
+  pull-requests: read
+  contents: read
 
 jobs:
   notify-discord:
     runs-on: ubuntu-latest
+    # (환경 시크릿을 쓰는 경우 주석 해제 후 환경 이름 지정)
+    # environment: production
+    env:
+      GH_TOKEN: ${{ github.token }}                             # gh CLI 인증
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}   # /github 없는 일반 웹훅 URL
+      USER_MAP: ${{ secrets.USER_MAP }}                         # {"githubLogin":"DISCORD_USER_ID", ...}
 
     steps:
-      - name: Get PR reviewers
-        id: reviewers
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Guard – required secrets present?
+        id: guard
         run: |
           set -euo pipefail
+          missing=0
+          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+            echo "::error::DISCORD_WEBHOOK_URL secret is missing in the upstream repo."
+            missing=1
+          fi
+          if [ $missing -eq 1 ]; then
+            exit 78  # neutral: skip job
+          fi
 
-          PR_NUMBER="${{ github.event.pull_request.number }}"
+      - name: Get PR reviewers (users & teams)
+        id: reviewers
+        if: steps.guard.outcome != 'failure'
+        run: |
+          set -euo pipefail
           REPO="${{ github.repository }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
 
-          echo "Fetching reviewers for PR #$PR_NUMBER from $REPO"
+          RESP=$(gh api repos/$REPO/pulls/$PR_NUMBER)
 
-          API_RESPONSE=$(gh api repos/$REPO/pulls/$PR_NUMBER 2>err.log || echo "")
-          if [ -s err.log ]; then
-            echo "Error from GitHub API:"
-            cat err.log
-          fi
+          USERS=$(echo "$RESP" | jq -c '[.requested_reviewers[]?.login] // []')
+          TEAMS=$(echo "$RESP" | jq -c '[.requested_teams[]?.slug] // []')
 
-          if [ -z "$API_RESPONSE" ]; then
-            REVIEWERS="[]"
-          else
-            # 안정적으로 리뷰어 목록 파싱 (null 및 빈 배열 모두 처리)
-            REVIEWERS=$(echo "$API_RESPONSE" | jq -c '[.requested_reviewers?[]?.login] // []')
-          fi
-
-          echo "Reviewers JSON: $REVIEWERS"
-
-          # base64 인코딩하여 GitHub Actions output으로 전달
-          REVIEWERS_B64=$(echo "$REVIEWERS" | base64)
-          echo "reviewers_b64=$REVIEWERS_B64" >> "$GITHUB_OUTPUT"
+          echo "users_b64=$(echo "$USERS" | base64 -w0)" >> "$GITHUB_OUTPUT"
+          echo "teams_b64=$(echo "$TEAMS" | base64 -w0)" >> "$GITHUB_OUTPUT"
 
       - name: Notify Discord
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          USER_MAP: ${{ secrets.USER_MAP }} # 예: {"alice": "1234", "bob": "5678"}
+        if: steps.guard.outcome != 'failure'
         run: |
           set -euo pipefail
 
           PR_TITLE="${{ github.event.pull_request.title }}"
           PR_URL="${{ github.event.pull_request.html_url }}"
 
-          # base64 디코딩 후 JSON 배열로 파싱
-          REVIEWERS_JSON=$(echo "${{ steps.reviewers.outputs.reviewers_b64 }}" | base64 --decode)
-          echo "Parsed reviewers: $REVIEWERS_JSON"
+          USER_JSON=$(echo "${{ steps.reviewers.outputs.users_b64 }}" | base64 --decode)
+          TEAM_JSON=$(echo "${{ steps.reviewers.outputs.teams_b64 }}" | base64 --decode)
 
-          MENTION_LIST=""
-          for user in $(echo "$REVIEWERS_JSON" | jq -r '.[]'); do
-            DISCORD_ID=$(echo "$USER_MAP" | jq -r --arg u "$user" '.[$u] // empty')
-            if [ -n "$DISCORD_ID" ]; then
-              MENTION_LIST="$MENTION_LIST <@$DISCORD_ID>"
-            else
-              MENTION_LIST="$MENTION_LIST @$user"
-            fi
-          done
+          USER_MAP_JSON=${USER_MAP:-"{}"}
+          TEAM_MAP_JSON="{}"  # 팀 멘션 안 쓰면 비워둠
 
-          if [ -z "$MENTION_LIST" ]; then
-            MENTION_LIST="(리뷰어가 지정되지 않았습니다)"
-          fi
-
-          curl -X POST "$DISCORD_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d @- <<EOF
-          {
-            "content": "${MENTION_LIST}\n새로운 Pull Request: **${PR_TITLE}**\n${PR_URL}"
+          build_mentions() {
+            local arr_json="$1" map_json="$2" is_user="$3" out=""
+            for item in $(echo "$arr_json" | jq -r '.[]'); do
+              if [ "$is_user" = "true" ]; then
+                did=$(echo "$map_json" | jq -r --arg u "$item" '.[$u] // empty')
+                if [ -n "$did" ] && [[ "$did" =~ ^[0-9]+$ ]]; then
+                  out="$out <@$did>"
+                else
+                  out="$out @$item"
+                fi
+              else
+                # 팀 사용 시 TEAM_MAP에 "<@&ROLE_ID>"를 값으로 넣어 역할 멘션 가능
+                role=$(echo "$map_json" | jq -r --arg t "$item" '.[$t] // empty')
+                if [ -n "$role" ]; then out="$out $role"; else out="$out @team:$item"; fi
+              fi
+            done
+            echo "$out"
           }
-          EOF
+
+          MENTIONS_USERS=$(build_mentions "$USER_JSON" "$USER_MAP_JSON" true)
+          MENTIONS_TEAMS=$(build_mentions "$TEAM_JSON" "$TEAM_MAP_JSON" false)
+          MENTIONS="$(echo "$MENTIONS_USERS $MENTIONS_TEAMS" | xargs)"
+          [ -z "$MENTIONS" ] && MENTIONS="(리뷰어가 지정되지 않았습니다)"
+
+          payload=$(jq -n --arg content "$MENTIONS\n새로운 Pull Request: **$PR_TITLE**\n$PR_URL" '{content:$content}')
+
+          curl -sS -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
