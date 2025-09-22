@@ -6,19 +6,23 @@ import { Prisma, Store } from '@prisma/client';
 export class StoreRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findBySellerId(sellerId: string) {
-    return this.prisma.store.findFirst({ where: { sellerId } });
+  async findBySellerId(sellerId: string): Promise<Store | null> {
+    return await this.prisma.store.findFirst({ 
+      where: { sellerId } 
+    });
   }
 
-  create(data: Prisma.StoreCreateInput): Promise<Store> {
-    return this.prisma.store.create({ data });
+  async create(data: Prisma.StoreCreateInput): Promise<Store> {
+    return await this.prisma.store.create({ data });
   }
 
-  getBySellerId(sellerId: string): Promise<boolean> {
-    return this.prisma.store.count({ where: { sellerId } }).then((n) => n > 0);
+  async getBySellerId(sellerId: string): Promise<boolean> {
+    const storeCount = await this.prisma.store.count({ 
+      where: { sellerId } })
+      return storeCount > 0
   }
 
-  findById(id: string) {
-    return this.prisma.store.findUnique({ where: { id } });
+  async findById(id: string): Primise<Store | null> {
+    return await this.prisma.store.findUnique({ where: { id } });
   }
 }
