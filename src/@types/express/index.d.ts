@@ -1,13 +1,10 @@
-import 'express-serve-static-core';
-
-type Role = 'SELLER' | 'BUYER';
-interface AuthUser {
-  id: string;
-  role: Role;
-}
+import { UserRole } from '@prisma/client';
 
 declare module 'express-serve-static-core' {
   interface Request {
-    user?: AuthUser;
+    user?: {
+      id: string;
+      role: UserRole;
+    };
   }
 }
