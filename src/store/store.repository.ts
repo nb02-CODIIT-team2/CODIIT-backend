@@ -22,7 +22,7 @@ export class StoreRepository {
       return storeCount > 0
   }
 
-  async findById(id: string): Primise<Store | null> {
+  async findById(id: string): Promise<Store | null> {
     return await this.prisma.store.findUnique({ where: { id } });
   }
 }
