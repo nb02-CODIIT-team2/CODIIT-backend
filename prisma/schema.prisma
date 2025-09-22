@@ -19,32 +19,29 @@ datasource db {
  * =========================
  */
 model User {
-  id           String     @id @default(cuid())
-  nickname     String
-  email        String     @unique
-  passwordHash String
-  role         UserRole   @default(BUYER)
-  image        String?
-  points       Int        @default(0) // 현재 보유 포인트
-  gradeLevel   GradeLevel @default(GREEN)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  deletedAt    DateTime?
+  id            String              @id @default(cuid())
+  nickname      String
+  email         String             @unique
+  passwordHash  String
+  role          UserRole           @default(BUYER)
+  image         String?     
+  points        Int                @default(0)    // 현재 보유 포인트
+  gradeLevel    GradeLevel         @default(GREEN)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  deletedAt     DateTime?   
+  
+  sessions      Session[]                   
+  store         Store?             @relation("StoreOwner") 
+  favoriteStores FavoriteStore[]                 
+  notifications Notification[]     @relation("UserNotifications")
 
-  store          Store?          @relation("StoreOwner")
-  sessions       Session[]
-  favoriteStores FavoriteStore[]
-  // notifications Notification[]     @relation("UserNotifications")
-
-  cart        Cart?
-  orders      Order[]
-  // reviews       Review[]                       
-  // inquiries     Inquiry[]          @relation("InquiryAuthor") 
-  // answers       Answer[]           @relation("AnswerAuthor")  
-  // addresses     Address[]                       
-  pointLedger PointTransaction[] // 포인트 사용/적립 내역              
-
-  Notification Notification[]
+  cart          Cart?                        
+  orders        Order[]                        
+  reviews       Review[]                       
+  inquiries     Inquiry[]          @relation("InquiryAuthor") 
+  answers       Answer[]           @relation("AnswerAuthor")                        
+  pointLedger   PointTransaction[] // 포인트 사용/적립 내역              
 
   @@index([role])
 }
@@ -65,7 +62,7 @@ enum GradeLevel {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String         @id @default(cuid())
   userId       String
   refreshToken String
   expiresAt    DateTime
@@ -78,12 +75,13 @@ model Session {
 
 /// 포인트 트랜잭션 (사용/적립 기록)
 model PointTransaction {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   userId    String
   delta     Int
   reason    String
   orderId   String?
-  createdAt DateTime @default(now())
+
+  createdAt DateTime       @default(now())
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
@@ -135,12 +133,13 @@ model FavoriteStore {
  * =========================
  */
 model Cart {
-  id        String    @id @default(cuid())
-  userId    String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime?
+  id        String      @id @default(cuid())
+  buyerId    String      @unique 
+  quantity  Int @default(0)
+  createdAt DateTime @default(now()) 
+  updatedAt DateTime @updatedAt
 
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  buyer  User       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
   items CartItem[]
 }
 
