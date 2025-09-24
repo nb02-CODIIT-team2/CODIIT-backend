@@ -48,7 +48,6 @@ export class StoreController {
   @Patch(':storeId')
   updateStore(
     @Param('storeId', ParseCuidPipe) storeId: string,
-    // @Req() req: { user: AuthUser },
     @Req() req: Request & { user: { userId: string; type: any } },
     @Body() dto: UpdateStoreDto,
   ): Promise<StoreResponseDto> {
