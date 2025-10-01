@@ -2,8 +2,7 @@ import { PrismaClient, UserType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function main(){
-
+async function main() {
   // dev용 판매자 생성 (DevAuthGuard와 맞추기 위해 id 고정)
   await prisma.user.upsert({
     where: { id: 'dev_seller_id' },
@@ -12,7 +11,7 @@ async function main(){
       id: 'dev_seller_id',
       email: 'dev-seller@example.com',
       type: UserType.SELLER,
-      nickname: 'DevSeller',
+      name: 'DevSeller',
       passwordHash: 'dev-hash',
     },
   });
@@ -24,7 +23,7 @@ async function main(){
       id: 'dev_buyer_id',
       email: 'dev-buyer@example.com',
       type: UserType.BUYER,
-      nickname: 'DevBuyer',
+      name: 'DevBuyer',
       passwordHash: 'dev-hash',
     },
   });
