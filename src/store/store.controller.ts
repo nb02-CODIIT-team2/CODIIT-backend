@@ -22,6 +22,7 @@ import { ParseCuidPipe } from 'src/common/pipes/parse-cuid.pipe';
 import { MyStoreProductQueryDto } from './dto/store-product-query.dto';
 import { MyInterestStoreDto } from './dto/register-interest-store.dto';
 import { MyStoreProductListWrapperDto } from './dto/store-product-wrapper.dto';
+import { MyInterestStoreDto } from './dto/register-interest-store.dto';
 
 @Controller('api/stores')
 export class StoreController {
@@ -52,6 +53,16 @@ export class StoreController {
     return this.storeService.getMyStoreProducts(userId, type, query);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post(':storeId/favorite')
+  registerInterestStore(
+    @Param('storeId', ParseCuidPipe) storeId: string,
+    @Req() req: { user: AuthUser },
+  ): Promise<{ store: MyInterestStoreDto }> {
+    const user = req.user;
+    return this.storeService.registerInterestStore(storeId, user.userId);
+  }
+  
   @UseGuards(JwtAuthGuard)
   @Delete(':storeId/favorite')
   deleteInterestStore(

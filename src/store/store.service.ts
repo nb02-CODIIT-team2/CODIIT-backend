@@ -3,9 +3,10 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UserType, Prisma } from '@prisma/client';
+import { UserType, Prisma, Store } from '@prisma/client';
 import { StoreRepository, ProductListRow } from './store.repository';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { StoreDetailDto } from './dto/store-detail.dto';
@@ -17,6 +18,7 @@ import { MyStoreProductQueryDto } from './dto/store-product-query.dto';
 import { MyStoreProductListItemDto } from './dto/store-product-list.dto';
 import { MyStoreProductListWrapperDto } from './dto/store-product-wrapper.dto';
 import { DateTime } from 'luxon';
+import { MyInterestStoreDto } from './dto/register-interest-store.dto';
 
 @Injectable()
 export class StoreService {
@@ -227,7 +229,42 @@ export class StoreService {
       isSoldOut: stockSum <= 0,
     };
   }
+  
+ private interestStoreDto(store: Store): MyInterestStoreDto {
+    return {
+      id: store.id,
+      userId: store.sellerId,
+      name: store.name,
+      address: store.address,
+      detailAddress: store.detailAddress ?? undefined,
+      phoneNumber: store.phoneNumber,
+      content: store.content,
+      image: store.image ?? undefined,
+      createdAt: store.createdAt,
+      updatedAt: store.updatedAt,
+    };
+  }
+    
+  async registerInterestStore(
+    storeId: string,
+    userId: string,
+  ): Promise<{ store: MyInterestStoreDto }> {
+    const store = await this.storeRepo.findByStoreId(storeId);
 
+    if (!store) throw new NotFoundException('스토어를 찾을 수 없습니다.');
+
+    if (!userId) throw new UnauthorizedException('로그인이 필요합니다.');
+
+    if (store.sellerId === userId)
+      throw new BadRequestException(
+        '자신의 스토어는 관심 등록 할 수 없습니다.',
+      );
+
+    await this.storeRepo.registerFavoriteStore(storeId, userId);
+
+    return { store: this.interestStoreDto(store) };
+  }
+  
   async deleteInterestStore(
     storeId: string,
     userId: string,
@@ -242,4 +279,6 @@ export class StoreService {
 
     return { store: this.interestStoreDto(store) };
   }
+  
+
 }
