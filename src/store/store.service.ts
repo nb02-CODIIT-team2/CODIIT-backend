@@ -12,6 +12,7 @@ import { StoreDetailDto } from './dto/store-detail.dto';
 import { MyStoreDetailDto } from './dto/mystore-detail.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { StoreResponseDto } from './dto/store-response.dto';
+import { MyInterestStoreDto } from './dto/register-interest-store.dto';
 import { MyStoreProductQueryDto } from './dto/store-product-query.dto';
 import { MyStoreProductListItemDto } from './dto/store-product-list.dto';
 import { MyStoreProductListWrapperDto } from './dto/store-product-wrapper.dto';
@@ -225,5 +226,20 @@ export class StoreService {
       createdAt: createdAtUTC ?? product.createdAt.toISOString(),
       isSoldOut: stockSum <= 0,
     };
+  }
+
+  async deleteInterestStore(
+    storeId: string,
+    userId: string,
+  ): Promise<{ store: MyInterestStoreDto }> {
+    const store = await this.storeRepo.findByStoreId(storeId);
+
+    if (!store) throw new NotFoundException('스토어를 찾을 수 없습니다.');
+
+    if (!userId) throw new UnauthorizedException('로그인이 필요합니다.');
+
+    await this.storeRepo.deleteFavoriteStore(storeId, userId);
+
+    return { store: this.interestStoreDto(store) };
   }
 }
