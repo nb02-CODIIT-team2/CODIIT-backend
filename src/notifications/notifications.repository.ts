@@ -6,7 +6,7 @@ import { NotificationType, UserType } from '@prisma/client';
 export class NotificationsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByIdAndAndUser(alarmId: string, userId: string) {
+  async findByIdAndUser(alarmId: string, userId: string) {
     return this.prisma.notification.findFirst({
       where: { id: alarmId, userId },
     });
