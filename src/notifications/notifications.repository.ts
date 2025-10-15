@@ -44,14 +44,4 @@ export class NotificationsRepository {
       data: { isRead: true, readAt: new Date() },
     });
   }
-
-  async findOneOwnedOfAllowed(
-    userId: string,
-    id: string,
-    allowed: NotificationType[],
-  ) {
-    return this.prisma.notification.findFirst({
-      where: { id, userId, type: { in: allowed } },
-    });
-  }
 }
