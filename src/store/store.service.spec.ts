@@ -84,7 +84,6 @@ describe('StoreService', () => {
     });
   });
 
-  // 판매자 forbidden이랑 unauthorized랑 차이점은? 
   describe('스토어 수정', () => {
     it('판매자 ForbiddenException', async () => {
       await expect(
@@ -277,8 +276,6 @@ describe('StoreService', () => {
         '자신의 스토어는 관심 등록 할 수 없습니다.',
       );
     });
-
-    // 스토어 관심 등록 정상 플로우 추가 필요
 
     it('스토어 관심 해제', async () => {
       repo.findByStoreId.mockResolvedValue({
