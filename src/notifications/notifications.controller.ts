@@ -12,7 +12,7 @@ import {
 import { NotificationsService } from './notifications.service';
 import { CurrentUser } from 'src/auth/current-user.decorator';
 import type { AuthUser } from 'src/auth/auth.types';
-import { concatMap, startWith, type Observable } from 'rxjs';
+import { switchMap, startWith, type Observable } from 'rxjs';
 import type { MessageEvent as SseMessageEvent } from '@nestjs/common';
 import { TICKER$ } from './ticker.token';
 
@@ -31,7 +31,7 @@ export class NotificationsController {
 
     return this.ticker$.pipe(
       startWith(0),
-      concatMap(async (): Promise<SseMessageEvent> => {
+      switchMap(async (): Promise<SseMessageEvent> => {
         const data = await this.notifications.unread(user.userId);
         return { id: String(Date.now()), type: 'notifications', data };
       }),
