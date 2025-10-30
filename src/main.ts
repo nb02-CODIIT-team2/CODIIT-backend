@@ -1,7 +1,6 @@
 import cookieParser from 'cookie-parser';
 import * as express from 'express';
 import { resolve } from 'path';
-
 import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -70,7 +69,7 @@ function createCorsOriginValidator() {
     requestOrigin: string | undefined,
     callback: (err: Error | null, allow?: boolean) => void,
   ) => {
-    if (!requestOrigin) return callback(null, true); // 서버-서버 호출, curl 등
+    if (!requestOrigin) return callback(null, true);
 
     const isExactMatch = allowedOrigins.includes(requestOrigin);
 
@@ -117,16 +116,13 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  // 업로드 정적 서빙
   const UPLOAD_DIR =
     process.env.UPLOAD_DIR || resolve(process.cwd(), 'uploads');
   app.use('/uploads', express.static(UPLOAD_DIR));
   console.log('[uploads] serving from:', UPLOAD_DIR);
 
-  // Sentry 글로벌 필터
   app.useGlobalFilters(new SentryGlobalFilter());
 
-  // 전역 파이프
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -134,7 +130,6 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger
   const swaggerConfig = new DocumentBuilder()
     .setTitle('CODI-IT')
     .setDescription('CODI-IT API 명세입니다.')
