@@ -41,6 +41,7 @@ export class StoreController {
     private readonly s3Service: S3Service,
   ) {}
 
+  // 새 스토어 등록
   @UseGuards(JwtAuthGuard)
   @Post()
   @ApiConsumes('multipart/form-data')
@@ -94,6 +95,7 @@ export class StoreController {
     };
   }
 
+  // 내 스토어 상세 조회
   @UseGuards(JwtAuthGuard)
   @Get('detail/my')
   getMyStoreDetail(@Req() req: { user: AuthUser }): Promise<MyStoreDetailDto> {
@@ -101,6 +103,7 @@ export class StoreController {
     return this.storeService.getMyStoreDetail(user.userId, user.type);
   }
 
+  // 내 스토어 상품 목록 조회
   @UseGuards(JwtAuthGuard)
   @Get('detail/my/product')
   getMyStoreProducts(
@@ -111,6 +114,7 @@ export class StoreController {
     return this.storeService.getMyStoreProducts(userId, type, query);
   }
 
+  // 관심 스토어 등록
   @UseGuards(JwtAuthGuard)
   @Post(':storeId/favorite')
   registerInterestStore(
@@ -121,6 +125,7 @@ export class StoreController {
     return this.storeService.registerInterestStore(storeId, user.userId);
   }
 
+  // 관심 스토어 해제
   @UseGuards(JwtAuthGuard)
   @Delete(':storeId/favorite')
   deleteInterestStore(
@@ -131,6 +136,7 @@ export class StoreController {
     return this.storeService.deleteInterestStore(storeId, user.userId);
   }
 
+  // 스토어 상세 조회
   @Get(':storeId')
   getStoreDetail(
     @Param('storeId', ParseCuidPipe) storeId: string,
@@ -138,6 +144,7 @@ export class StoreController {
     return this.storeService.getStoreDetail(storeId);
   }
 
+  // 스토어 수정
   @UseGuards(JwtAuthGuard)
   @Patch(':storeId')
   @ApiConsumes('multipart/form-data')
