@@ -70,7 +70,7 @@ export class InquiryService {
       );
 
     // 답변이 이미 달린 경우 수정 불가(문의 상태가 답변 완료인 경우 || 답변이 이미 존재하는 경우)
-    if (inquiry.status === AnswerStatus.CompletedAnswer || reply)
+    if (inquiry.status === AnswerStatus.CompletedAnswer || reply?.id)
       throw new ConflictException(
         '답변이 이미 달린 문의는 수정할 수 없습니다.',
       );
@@ -121,7 +121,7 @@ export class InquiryService {
       );
 
     // 이미 답변이 달린 경우 답변 불가(문의 상태가 답변 완료인 경우 || 답변이 이미 존재하는 경우)
-    if (inquiry.status === AnswerStatus.CompletedAnswer || reply)
+    if (inquiry.status === AnswerStatus.CompletedAnswer || reply?.id)
       throw new ConflictException(
         '이미 답변이 달린 문의는 답변을 등록할 수 없습니다.',
       );
