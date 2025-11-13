@@ -292,7 +292,8 @@ _아래 프로필 사진을 클릭하면 각 팀원의 GitHub 프로필로 이�
 ---
 
 ## 🧠 프로젝트 회고 및 발표자료
-
+- [고급프로젝트 최종발표](https://github.com/user-attachments/files/23513791/default.pptx)
+- [시연 영상](https://drive.google.com/file/d/1ILPwAqsJ7JVpqCB_zHCYsjKw0bMYGRGm/view?usp=sharing)
 - 차수연 [개인 개발 리포트](https://github.com/chya-chya/NB02_CODI-IT-Team2-Report/blob/main/README.md), 
        [개인 발표 자료](https://www.notion.so/2957b119cb4b80819391eb6291272aff)
 - 권나현 [개인 개발 리포트](https://github.com/kwonnahyun0125/NB02_CODI-IT-Team2-Report)
